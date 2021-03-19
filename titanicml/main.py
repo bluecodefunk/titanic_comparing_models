@@ -10,7 +10,8 @@ def main():
     #dataset_missing_drop = Processing.missingdrop(dataset, 0.4)
     dataset_clr = MissingVals.groupimputedrop(dataset)
     dataset_clr['name_title'] = dataset_clr['Name'].apply(lambda x: FeatureExtract.(x))
-
+    dataset_clr = FeatureExtract.dummyfy(dataset_clr, ['Pclass','Sex','Embarked','name_title'])
+    
 
 if __name__ == "__main__":
     main()

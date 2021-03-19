@@ -72,12 +72,13 @@ class FeatureExtract:
             return None
     @classmethod
     def dummyfy(cls, dataset: pd.DataFrame, cols: list):
-        self.dataset = dataset
-        sel
-        for cols in ['Pclass', 'Sex', 'Embarked', 'name_title']:
-            one_hot = pd.get_dummies(dataset[cols], drop_first=True)
+        cls.dataset = dataset
+        cls.cols = cols
+        for cols_name in ['Pclass', 'Sex', 'Embarked', 'name_title']:
+            one_hot = pd.get_dummies(dataset[cols_name], drop_first=True, prefix=cols_name)
             # Drop column B as it is now encoded
-            dataset = dataset.drop(cols, axis=1)
+            dataset = dataset.drop(cols_name, axis=1)
             # Join the encoded df
             dataset = dataset.join(one_hot)
+        return dataset
 
