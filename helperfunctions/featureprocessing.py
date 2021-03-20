@@ -1,4 +1,5 @@
 """ Basic data preparation for training a model
+
 Classes:
 
     MissingVals
@@ -24,8 +25,8 @@ class MissingVals:
     @classmethod
     def missingfeatures(cls, traindata: pd.DataFrame):
         """
-        param traindata: pandas dataframe
-        return: pandas series
+        :param traindata: pandas dataframe
+        :return pandas series
         """
         cls.traindata = traindata
         nullseries = traindata.isnull().mean()[traindata.isnull().mean() > 0]
@@ -43,11 +44,15 @@ class MissingVals:
 
     @classmethod
     def groupimputedrop(cls, dataset: pd.DataFrame, dictuserinput: dict = None):
+
         """
-        :rtype pd.DataFrame
+        Auto impute decisions for different missing value ranges
+
         :param dictuserinput:
         :param dataset: pd.DataFrame
+        :return pd.DataFrame
         """
+
         cls.dataset = dataset
         cls.dictuserinput = dictuserinput
         nullseries = cls.missingfeatures(dataset)
@@ -61,9 +66,7 @@ class MissingVals:
                                for i in range(len(nullseries))}
         else:
             method_col_dict = dictuserinput
-        print(method_col_dict)
         for key in method_col_dict:
-            print(key)
             if method_col_dict[key] == 'drop_col':
                 dataset = dataset.drop(columns=key)
             elif method_col_dict[key] == 'drop_row':
@@ -92,12 +95,16 @@ class FeatureExtract:
 
     @classmethod
     def finddummy(cls, dataset: pd.DataFrame, max_uniques: int = 20, group_size: int = None):
+
         """
         Get dummy features list, high dimensional features and modify feature bins
 
         Returns dummy_list if group_size = None else returns dummy_features, highdimfeatures
         and modifies features with (5 < colunique < 20) to (colunique <=5)
-        :rtype: list, list, pd.DataFrame
+        :param dataset: pd.DataFrame
+        :param max_uniques: int
+        :param group_size: int
+        :return: list, list, pd.DataFrame
         """
 
         cls.dataset = dataset
@@ -125,7 +132,13 @@ class FeatureExtract:
 
     @classmethod
     def dummyfy(cls, dataset: pd.DataFrame, cols: list = None):
-        """Dummy encode categorical features"""
+
+        """
+        Dummy encode categorical features
+        :param dataset: pd.DataFrame
+        :param cols: list
+        """
+
         cls.dataset = dataset
         cls.cols = cols
         if not cols:
