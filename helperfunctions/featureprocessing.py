@@ -1,19 +1,39 @@
-""" This is a library with functions useful for missing value treatment and ...
+""" Basic data preparation for training a model
+Classes:
+
+    MissingVals
+    FeatureExtract
+
+Functions:
+    missingfeatures(pd.DataFrame) -> pd.Series
+    missingdrop(pd.DataFrame, float) -> pd.DataFrame
+    groupimputedrop(pd.DataFrame, dict) -> pd.DataFrame
+    search_title(str) -> str
+    dummyfy(pd.DataFrame,list) -> pd.DataFrame
+
+
 """
+import re
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np
+
 
 class MissingVals:
-    """ This class has method for missing value treatment
-    """
+    """ This class has method for missing value treatment"""
 
     @classmethod
     def missingfeatures(cls, traindata: pd.DataFrame):
+        """
+        param traindata: pandas dataframe
+        return: pandas series
+        """
         cls.traindata = traindata
         nullseries = traindata.isnull().mean()[traindata.isnull().mean() > 0]
         return nullseries
 
     @classmethod
     def missingdrop(cls, traindata: pd.DataFrame, missing: float):
+        """Drop columns with missing percentage greater than threshold"""
         cls.traindata = traindata
         cls.missing = missing
         nullseries = cls.missingfeatures(traindata)
@@ -24,9 +44,9 @@ class MissingVals:
     @classmethod
     def groupimputedrop(cls, dataset: pd.DataFrame, dictuserinput: dict = None):
         """
+        :rtype pd.DataFrame
         :param dictuserinput:
-        :param dataset: pandas dataframe
-        :return:
+        :param dataset: pd.DataFrame
         """
         cls.dataset = dataset
         cls.dictuserinput = dictuserinput
@@ -47,7 +67,7 @@ class MissingVals:
             if method_col_dict[key] == 'drop_col':
                 dataset = dataset.drop(columns=key)
             elif method_col_dict[key] == 'drop_row':
-                dataset = dataset.dropna(subset = [key], axis=0   )
+                dataset = dataset.dropna(subset=[key], axis=0)
             elif dataset[key].dtype == object and dataset[key].isnull().sum() > 0:
                 dataset[key] = dataset[key].fillna(dataset[key].mode())
             elif method_col_dict[key] == 'group':
@@ -64,21 +84,56 @@ class FeatureExtract:
 
     @classmethod
     def search_title(cls, text: str):
+        """Return title from name string"""
         cls.text = text
-        m = re.search(', (.+?)\.', text)
-        if m:
-            return m.group(1)
-        else:
-            return None
+        name_title = re.search(', (.+?)\.', text)
+        if name_title:
+            return name_title.group(1)
+
     @classmethod
-    def dummyfy(cls, dataset: pd.DataFrame, cols: list):
+    def finddummy(cls, dataset: pd.DataFrame, max_uniques: int = 20, group_size: int = None):
+        """
+        Get dummy features list, high dimensional features and modify feature bins
+
+        Returns dummy_list if group_size = None else returns dummy_features, highdimfeatures
+        and modifies features with (5 < colunique < 20) to (colunique <=5)
+        :rtype: list, list, pd.DataFrame
+        """
+
+        cls.dataset = dataset
+        cls.max_uniques = max_uniques
+        cls.group_size = group_size
+        discreetcols = dataset.select_dtypes(exclude=['int64', 'float64']).columns
+        dummylist = []
+        for colname in discreetcols:
+            colunique = dataset[colname].nunique()
+            if colunique <= max_uniques and isinstance(colname, str):
+                dummylist.append(colname)
+        highdimfeatures = list(np.setdiff1d(discreetcols, dummylist))
+        if isinstance(group_size, int):
+            for colname in dummylist:
+                colunique = dataset[colname].nunique()
+                if colunique > group_size:
+                    mainlabels = list(dataset[colname].value_counts()[:group_size].index.values)
+                    dataset[colname] = np.where(dataset[colname].isin(mainlabels),
+                                                dataset[colname],
+                                                "other bin")
+
+            return dummylist, highdimfeatures, dataset
+        else:
+            return dummylist
+
+    @classmethod
+    def dummyfy(cls, dataset: pd.DataFrame, cols: list = None):
+        """Dummy encode categorical features"""
         cls.dataset = dataset
         cls.cols = cols
-        for cols_name in ['Pclass', 'Sex', 'Embarked', 'name_title']:
-            one_hot = pd.get_dummies(dataset[cols_name], drop_first=True, prefix=cols_name)
+        if not cols:
+            cols = cls.finddummy(dataset, max_uniques=20, group_size=None)
+        for colname in cols:
+            one_hot = pd.get_dummies(dataset[colname], drop_first=True, prefix=colname)
             # Drop column B as it is now encoded
-            dataset = dataset.drop(cols_name, axis=1)
+            dataset = dataset.drop(colname, axis=1)
             # Join the encoded df
             dataset = dataset.join(one_hot)
         return dataset
-
